@@ -21,6 +21,7 @@ driver = webdriver.Chrome(service=service, options=options)
 
 # Set up base url
 city = "calgary"
+country = "canada" # Used to detemine the market
 base_url = "https://www.facebook.com/marketplace/" + city + "/search?"
 
 # Set up search parameters
