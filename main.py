@@ -13,6 +13,8 @@ import time
 from groq import Groq
 import os
 from dotenv import load_dotenv
+from sklearn.linear_model import LinearRegression
+import numpy as np
 
 load_dotenv()
 
@@ -41,7 +43,7 @@ transmission = "automatic"
 make = "toyota"
 model = "corolla"
 model_year = 2005 # User input
-model_mileage = 299999 # User input
+car_mileage = 299999 # User input
 
 url = base_url + "min_price=" + str(min_price) + "&max_price=" + str(max_price) + "&min_mileage=" + str(min_mileage) + "&max_mileage=" + str(max_mileage) + "&min_year=" + str(min_year) + "&max_year=" + str(max_year) + "&days_listed=" + str(days_listed) + "&transmission=" + transmission + "&query=" + make + "%20" + model
 
@@ -171,9 +173,28 @@ generation_range = get_generation_prompt(make, model, model_year)
 print(f"The {model_year} {make} {model} belongs to the generation: {generation_range}")
 
 # Filter vehicle_df for years within the generation_range
-try:
-    gen_start, gen_end = [int(x) for x in generation_range.split('-')]
-    specific_vehicle_df = vehicle_df[(vehicle_df['Year'] >= gen_start) & (vehicle_df['Year'] <= gen_end)]
-    print(specific_vehicle_df)
-except Exception as e:
-    print(f"Error filtering DataFrame by generation range: {e}")
+gen_start, gen_end = [int(x) for x in generation_range.split('-')]
+specific_vehicle_df = vehicle_df[
+    (vehicle_df['Year'] >= gen_start) & (vehicle_df['Year'] <= gen_end)
+]
+
+specific_vehicle_df.to_csv('specific_vehicle_data.csv', index=False)
+
+# Use Linear Regression to predict price based on mileage
+if len(specific_vehicle_df) >= 2:
+    mileages = specific_vehicle_df['Mileage'].values.reshape(-1, 1)
+    prices = specific_vehicle_df['Price'].values
+    model = LinearRegression().fit(mileages, prices)
+    lr_predicted_price = model.predict(np.array([[car_mileage]]))[0]
+else:
+    lr_predicted_price = 0
+
+# Filter for comparable listings with +-20000km of mileage
+subset_vehicle_df = specific_vehicle_df[
+    (specific_vehicle_df['Mileage'] >= car_mileage - 20000) & (specific_vehicle_df['Mileage'] <= car_mileage + 20000)]
+
+subset_vehicle_df.to_csv('subset_vehicle_data.csv', index=False)
+
+average_subset_vehicle_price = subset_vehicle_df['Price'].mean()
+
+print(f"Predicted price for mileage {car_mileage}: ${((lr_predicted_price+average_subset_vehicle_price)/2):.2f}")
