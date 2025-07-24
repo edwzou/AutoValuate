@@ -73,61 +73,71 @@ titles_div = soup.find_all('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6')
 titles_list = [title.text.strip() for title in titles_div]
 prices_div = soup.find_all('span', class_='x193iq5w xeuugli x13faqbe x1vvkbs x1xmvt09 x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x xudqn12 x676frb x1lkfr7t x1lbecb7 x1s688f xzsf02u')
 prices_list = [price.text.strip() for price in prices_div]
-mileage_div = soup.find_all('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6 xlyipyv xuxw1ft x1j85h84')
-mileage_list = [mileage.text.strip() for mileage in mileage_div]
+content_div = soup.find_all('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6 xlyipyv xuxw1ft x1j85h84')
+content_list = [content.text.strip() for content in content_div]
 
-# Create a regular expression pattern to match city and province entries like "City, AB"
-pattern = re.compile(r'(\w+(?:-\w+)?, [A-Z]{2})')
+location_pattern = re.compile(r'^[A-Za-z\s\-]+, [A-Z]{2}$')
+mileage_pattern = re.compile(r'^\d+K (km|miles)$')
 
-# Initialize lists to store the adjusted milage entries
-mileage_list_adjusted = []
+location_list = []
+mileage_list = []
 
-# Iterate through the milage entries and adjust them
-for mileage in mileage_list:
-    mileage_list_adjusted.append(mileage)
-    if pattern.match(mileage) and len(mileage_list_adjusted) > 1 and pattern.match(mileage_list_adjusted[-2]):
-        mileage_list_adjusted.insert(-1, '0K km')
+i = 0
+while i < len(content_list):
+    content = content_list[i]
+    if content in ["Log In", "Create new account"]:
+        i += 1
+        continue
+    if location_pattern.match(content):
+        location_list.append(content)
+        if i + 1 < len(content_list) and mileage_pattern.match(content_list[i + 1]):
+            mileage_list.append(content_list[i + 1])
+            i += 2
+        else:
+            mileage_list.append("0K km")
+            i += 1
+    else:
+        i += 1
 
-# Remove the km or miles from mileage entries
-mileage_pattern_km = r'(\d+)K km'
-mileage_pattern_miles = r'(\d+)K miles'
+mileage_pattern_km = re.compile(r'^\d+K km$')
+mileage_pattern_miles = re.compile(r'^\d+K miles$')
 
-# Create a list to store the adjusted mileage entries
 mileage_list_cleaned = []
 
-for mileage in mileage_list_adjusted:
-    match_mileage_km = re.search(mileage_pattern_km, mileage)
-    match_mileage_miles = re.search(mileage_pattern_miles, mileage)
-    if match_mileage_km or match_mileage_miles:
-        if match_mileage_km:
-            mileage_list_cleaned.append(int(match_mileage_km.group(1)) * 1000)
-        else:
-            mileage_list_cleaned.append(int(match_mileage_miles.group(1)) * 1609)
+for mileage in mileage_list:
+    if mileage_pattern_km.match(mileage):
+        mileage_list_cleaned.append(int(mileage.replace('K km', '')) * 1000)
+    elif mileage_pattern_miles.match(mileage):
+        mileage_list_cleaned.append(int(mileage.replace('K miles', '')) * 1609)
 
-# Add all values to a list of dictionaries
-vehicle_list = []
+# Add all the values to a list of dictionaries
+vehicles_list = []
 
+year_pattern = re.compile(r'\b(19[8-9]\d|20[0-2]\d|2025)\b')
 for i, item in enumerate(titles_list):
+    title = titles_list[i]
+    title_lower = title.lower()
+    # Check for year, make, and model
+    year_match = year_pattern.search(title_lower)
+    make_match = re.search(make.lower(), title_lower)
+    model_match = re.search(model.lower(), title_lower)
+    if not (year_match and make_match and model_match):
+        continue  # Skip this entry if any are missing
     vehicles_dict = {}
-    title_split = titles_list[i].split()
-    vehicles_dict['Year'] = int(title_split[0])
-    vehicles_dict['Make'] = title_split[1]
-    vehicles_dict['Model'] = title_split[2]
+    vehicles_dict['Year'] = year_match.group(0)
+    vehicles_dict['Make'] = make_match.group(0)
+    vehicles_dict['Model'] = model_match.group(0)
     vehicles_dict['Price'] = int(re.sub(r'[^\d.]', '', prices_list[i]))
+    vehicles_dict['Location'] = location_list[i]
     vehicles_dict['Mileage'] = mileage_list_cleaned[i]
-    vehicle_list.append(vehicles_dict)
+    vehicles_list.append(vehicles_dict)
 
-# Filter out anomalies
-filtered_vehicle_list = []
-for v in vehicle_list:
-    if v['Make'] != make and v['Model'] != model:
+filtered_vehicles_list = []
+for vehicle in vehicles_list:
+    if vehicle['Price'] in [1, 12, 123, 1234, 12345, 123456, 1234567]:
         continue
-    if v['Price'] in [1, 12, 123, 1234, 12345, 123456]:
-        continue
-    if v['Price'] < 1000 and (v['Mileage'] > 100000 or v['Mileage'] < 100000):
-        continue
-    filtered_vehicle_list.append(v)
+    filtered_vehicles_list.append(vehicle)
 
 # Continue with DataFrame creation and CSV export
-vehicle_df = pd.DataFrame(filtered_vehicle_list)
+vehicle_df = pd.DataFrame(filtered_vehicles_list)
 vehicle_df.to_csv('vehicle_data.csv', index=False)
