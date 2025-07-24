@@ -41,6 +41,7 @@ transmission = "automatic"
 make = "toyota"
 model = "corolla"
 model_year = 2005 # User input
+model_mileage = 299999 # User input
 
 url = base_url + "min_price=" + str(min_price) + "&max_price=" + str(max_price) + "&min_mileage=" + str(min_mileage) + "&max_mileage=" + str(max_mileage) + "&min_year=" + str(min_year) + "&max_year=" + str(max_year) + "&days_listed=" + str(days_listed) + "&transmission=" + transmission + "&query=" + make + "%20" + model
 
@@ -130,9 +131,9 @@ for i, item in enumerate(titles_list):
     if not (year_match and make_match and model_match):
         continue  # Skip this entry if any are missing
     vehicles_dict = {}
-    vehicles_dict['Year'] = year_match.group(0)
-    vehicles_dict['Make'] = make_match.group(0)
-    vehicles_dict['Model'] = model_match.group(0)
+    vehicles_dict['Year'] = int(year_match.group(0))
+    vehicles_dict['Make'] = make_match.group(0).capitalize()
+    vehicles_dict['Model'] = model_match.group(0).capitalize()
     vehicles_dict['Price'] = int(re.sub(r'[^\d.]', '', prices_list[i]))
     vehicles_dict['Location'] = location_list[i]
     vehicles_dict['Mileage'] = mileage_list_cleaned[i]
@@ -148,7 +149,7 @@ for vehicle in vehicles_list:
 vehicle_df = pd.DataFrame(filtered_vehicles_list)
 vehicle_df.to_csv('vehicle_data.csv', index=False)
 
-# LLM part
+# Use LLM to get the generation range
 def get_generation_prompt(make, model, year):
     client = Groq(api_key=os.getenv("API_KEY"))
     prompt = (
@@ -168,3 +169,11 @@ def get_generation_prompt(make, model, year):
 
 generation_range = get_generation_prompt(make, model, model_year)
 print(f"The {model_year} {make} {model} belongs to the generation: {generation_range}")
+
+# Filter vehicle_df for years within the generation_range
+try:
+    gen_start, gen_end = [int(x) for x in generation_range.split('-')]
+    specific_vehicle_df = vehicle_df[(vehicle_df['Year'] >= gen_start) & (vehicle_df['Year'] <= gen_end)]
+    print(specific_vehicle_df)
+except Exception as e:
+    print(f"Error filtering DataFrame by generation range: {e}")
