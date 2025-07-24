@@ -10,6 +10,11 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import time
+from groq import Groq
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Set up Selenium WebDriver
 options = webdriver.ChromeOptions()
@@ -35,6 +40,7 @@ days_listed = 1
 transmission = "automatic"
 make = "toyota"
 model = "corolla"
+model_year = 2005 # User input
 
 url = base_url + "min_price=" + str(min_price) + "&max_price=" + str(max_price) + "&min_mileage=" + str(min_mileage) + "&max_mileage=" + str(max_mileage) + "&min_year=" + str(min_year) + "&max_year=" + str(max_year) + "&days_listed=" + str(days_listed) + "&transmission=" + transmission + "&query=" + make + "%20" + model
 
@@ -141,3 +147,24 @@ for vehicle in vehicles_list:
 # Continue with DataFrame creation and CSV export
 vehicle_df = pd.DataFrame(filtered_vehicles_list)
 vehicle_df.to_csv('vehicle_data.csv', index=False)
+
+# LLM part
+def get_generation_prompt(make, model, year):
+    client = Groq(api_key=os.getenv("API_KEY"))
+    prompt = (
+        f"What generation does a {year} {make} {model} belong to? "
+        "Please answer with only the year range of the generation, e.g., '2000-2005'."
+    )
+    try:
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=100,
+            temperature=0.0,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Error getting generation: {e}")
+
+generation_range = get_generation_prompt(make, model, model_year)
+print(f"The {model_year} {make} {model} belongs to the generation: {generation_range}")
