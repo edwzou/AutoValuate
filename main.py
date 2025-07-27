@@ -65,7 +65,7 @@ def main():
         print("Close button not found or not clickable.")
 
     # Scroll down to load more results
-    scroll_count = 4
+    scroll_count = 2
     scroll_delay = 2
     print(f"Scrolling {scroll_count} times with {scroll_delay} second delays...")
     for i in range(scroll_count):
