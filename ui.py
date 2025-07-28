@@ -173,16 +173,29 @@ def show_results(vehicle_info, lr_predicted_price, average_price, final_price, v
     ttk.Label(info_frame, text=f"Vehicles found: {vehicles_found}", 
               font=('Arial', 11)).grid(row=0, column=0, sticky=tk.W, pady=2)
     
-    # Make window modal and handle close properly
-    result_window.transient()
-    result_window.grab_set()
+    # Add buttons
+    button_frame = ttk.Frame(main_frame)
+    button_frame.grid(row=4, column=0, columnspan=2, pady=20)
+    
+    def new_search():
+        result_window.destroy()
+        # Restart the application
+        import subprocess
+        import sys
+        subprocess.Popen([sys.executable, 'main.py'])
+        sys.exit(0)
+    
+    ttk.Button(button_frame, text="New Search", 
+              command=new_search).grid(row=0, column=0, padx=(0, 10))
+    ttk.Button(button_frame, text="Close", 
+              command=result_window.destroy).grid(row=0, column=1)
     
     # Handle window close (X button) to only close this window
     def on_closing():
         result_window.destroy()
     
     result_window.protocol("WM_DELETE_WINDOW", on_closing)
-    result_window.wait_window()
+    result_window.mainloop()
 
 def run_ui():
     """Run the UI and return the settings"""
