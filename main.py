@@ -162,26 +162,56 @@ def main():
     vehicle_df = pd.DataFrame(filtered_vehicles_list)
     # vehicle_df.to_csv('vehicle_data.csv', index=False)
 
-    # Use LLM to get the generation range
-    def get_generation_prompt(make, model, year):
+    # Use LLM to get the generation range with enhanced prompt engineering
+    def get_generation_prompt(make, model, year, prompt_settings=None):
         client = Groq(api_key=os.getenv("API_KEY"))
-        prompt = (
-            f"What generation does a {year} {make} {model} belong to? "
-            "Please answer with only the year range of the generation, e.g., '2000-2005'."
-        )
+        
+        # Use enhanced prompt engineering if available
+        if prompt_settings and prompt_settings.get('include_context'):
+            from ui import PromptEngineering
+            prompt_engineer = PromptEngineering()
+            prompt_data = prompt_engineer.get_enhanced_generation_prompt(make, model, year, city)
+            
+            messages = [
+                {"role": "system", "content": prompt_data['system']},
+                {"role": "user", "content": prompt_data['user']}
+            ]
+            
+            temperature = prompt_settings.get('temperature', 0.3)
+            max_tokens = prompt_data.get('max_tokens', 200)
+        else:
+            # Fallback to original simple prompt
+            prompt = (
+                f"What generation does a {year} {make} {model} belong to? "
+                "Please answer with only the year range of the generation, e.g., '2000-2005'."
+            )
+            messages = [{"role": "user", "content": prompt}]
+            temperature = 0.0
+            max_tokens = 100
+        
         try:
             response = client.chat.completions.create(
                 model="llama3-8b-8192",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=100,
-                temperature=0.0,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"Error getting generation: {e}")
+            return None
 
-    generation_range = get_generation_prompt(make, model, model_year)
-    print(f"The {model_year} {make} {model} belongs to the generation: {generation_range}")
+    # Extract prompt engineering settings
+    prompt_settings = settings.get('prompt_engineering', {})
+    
+    generation_range = get_generation_prompt(make, model, model_year, prompt_settings)
+    if generation_range:
+        print(f"The {model_year} {make} {model} belongs to the generation: {generation_range}")
+    else:
+        print(f"Could not determine generation for {model_year} {make} {model}")
+        # Fallback to a reasonable range
+        generation_range = f"{model_year-2}-{model_year+2}"
+        print(f"Using fallback generation range: {generation_range}")
 
     # Filter vehicle_df for years within the generation_range
     gen_start, gen_end = [int(x) for x in generation_range.split('-')]
@@ -199,6 +229,73 @@ def main():
         lr_predicted_price = lr_model.predict(np.array([[car_mileage]]))[0]
     else:
         lr_predicted_price = 0
+    
+    # Enhanced AI analysis using prompt engineering
+    def get_ai_price_analysis(make, model, year, mileage, city, prompt_settings):
+        """Get AI-powered price analysis using enhanced prompts"""
+        if not prompt_settings or not prompt_settings.get('include_context'):
+            return None
+            
+        try:
+            from ui import PromptEngineering
+            prompt_engineer = PromptEngineering()
+            prompt_data = prompt_engineer.get_price_analysis_prompt(make, model, year, mileage, city)
+            
+            client = Groq(api_key=os.getenv("API_KEY"))
+            response = client.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[
+                    {"role": "system", "content": prompt_data['system']},
+                    {"role": "user", "content": prompt_data['user']}
+                ],
+                max_tokens=prompt_data['max_tokens'],
+                temperature=prompt_settings.get('temperature', 0.3),
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"Error getting AI price analysis: {e}")
+            return None
+    
+    def get_market_insights(make, model, city, prompt_settings):
+        """Get market insights using enhanced prompts"""
+        if not prompt_settings or not prompt_settings.get('include_context'):
+            return None
+            
+        try:
+            from ui import PromptEngineering
+            prompt_engineer = PromptEngineering()
+            prompt_data = prompt_engineer.get_market_insights_prompt(make, model, city)
+            
+            client = Groq(api_key=os.getenv("API_KEY"))
+            response = client.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[
+                    {"role": "system", "content": prompt_data['system']},
+                    {"role": "user", "content": prompt_data['user']}
+                ],
+                max_tokens=prompt_data['max_tokens'],
+                temperature=prompt_settings.get('temperature', 0.3),
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"Error getting market insights: {e}")
+            return None
+    
+    # Get AI analysis if prompt engineering is enabled
+    ai_price_analysis = None
+    market_insights = None
+    
+    if prompt_settings and prompt_settings.get('include_context'):
+        print("Getting AI-powered price analysis...")
+        ai_price_analysis = get_ai_price_analysis(make, model, model_year, car_mileage, city, prompt_settings)
+        
+        print("Getting market insights...")
+        market_insights = get_market_insights(make, model, city, prompt_settings)
+        
+        if ai_price_analysis:
+            print(f"AI Price Analysis: {ai_price_analysis}")
+        if market_insights:
+            print(f"Market Insights: {market_insights}")
 
     # Filter for comparable listings with +-20000km of mileage
     subset_vehicle_df = specific_vehicle_df[
@@ -219,7 +316,8 @@ def main():
         'city': city.capitalize()
     }
     
-    show_results(vehicle_info, lr_predicted_price, average_subset_vehicle_price, predicted_price, len(filtered_vehicles_list))
+    show_results(vehicle_info, lr_predicted_price, average_subset_vehicle_price, predicted_price, 
+                len(filtered_vehicles_list), ai_price_analysis, market_insights)
 
 if __name__ == "__main__":
     main()

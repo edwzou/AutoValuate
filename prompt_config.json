@@ -1,0 +1,133 @@
+{
+  "prompt_templates": {
+    "vehicle_generation": {
+      "system": "You are an expert automotive analyst specializing in vehicle generations and model years. Provide accurate, concise information about vehicle generations.",
+      "user_template": "What generation does a {year} {make} {model} belong to? Please answer with only the year range of the generation, e.g., '2000-2005'. If uncertain, provide the most likely range based on common knowledge.",
+      "examples": [
+        {
+          "input": "What generation does a 2005 Toyota Corolla belong to?",
+          "output": "2003-2008"
+        },
+        {
+          "input": "What generation does a 2018 Honda Civic belong to?",
+          "output": "2016-2021"
+        },
+        {
+          "input": "What generation does a 2010 Ford F-150 belong to?",
+          "output": "2009-2014"
+        }
+      ],
+      "temperature_range": [0.0, 0.3],
+      "max_tokens": 100,
+      "context_importance": "high"
+    },
+    "price_analysis": {
+      "system": "You are a professional vehicle appraiser with expertise in market analysis. Analyze vehicle pricing factors and provide insights.",
+      "user_template": "Analyze the pricing for a {year} {make} {model} with {mileage}km in {city}. Consider factors like market trends, location, and condition. Provide a brief analysis in 2-3 sentences.",
+      "examples": [
+        {
+          "input": "Analyze pricing for a 2010 Honda Civic with 150000km in Toronto",
+          "output": "The 2010 Honda Civic is in the 8th generation (2006-2011), known for reliability. With 150,000km, this vehicle is in the mid-life range where depreciation typically stabilizes. Toronto's market tends to command higher prices due to urban demand and limited parking, suggesting a premium of 10-15% over rural areas."
+        },
+        {
+          "input": "Analyze pricing for a 2015 Toyota Camry with 80000km in Vancouver",
+          "output": "The 2015 Toyota Camry represents the 7th generation (2012-2017), offering excellent fuel economy and reliability. With only 80,000km, this vehicle is still in its prime with significant remaining life. Vancouver's market shows strong demand for fuel-efficient sedans, with prices typically 5-10% above national averages due to high fuel costs and environmental awareness."
+        }
+      ],
+      "temperature_range": [0.2, 0.5],
+      "max_tokens": 200,
+      "context_importance": "very_high"
+    },
+    "market_insights": {
+      "system": "You are a market research analyst specializing in automotive industry trends and regional market dynamics.",
+      "user_template": "What are the key market factors affecting {make} {model} prices in {city}? Consider seasonal trends, supply/demand, and regional preferences.",
+      "examples": [
+        {
+          "input": "What affects Toyota Corolla prices in Calgary?",
+          "output": "Calgary's Toyota Corolla market is influenced by the city's strong economy and preference for reliable vehicles. Winter conditions favor AWD/4WD models, while fuel efficiency remains important. Seasonal fluctuations occur with spring/summer typically showing 5-10% higher prices due to increased demand."
+        },
+        {
+          "input": "What affects Ford F-150 prices in Edmonton?",
+          "output": "Edmonton's Ford F-150 market is driven by the city's industrial economy and harsh winter conditions. 4x4 models command significant premiums, especially during winter months. The oil industry's cyclical nature affects demand, with economic booms typically increasing truck prices by 15-20%."
+        }
+      ],
+      "temperature_range": [0.3, 0.6],
+      "max_tokens": 250,
+      "context_importance": "very_high"
+    },
+    "condition_assessment": {
+      "system": "You are an automotive inspector with expertise in evaluating vehicle condition and its impact on pricing.",
+      "user_template": "Assess the likely condition and pricing impact of a {year} {make} {model} with {mileage}km. Consider typical wear patterns, maintenance requirements, and resale value factors.",
+      "examples": [
+        {
+          "input": "Assess a 2012 Honda Civic with 180000km",
+          "output": "At 180,000km, this 2012 Honda Civic (8th generation) is approaching the end of its typical reliable service life. Major components like timing belt, suspension, and transmission may need attention. Expect 20-30% depreciation from similar vehicles with 100,000km, with condition heavily dependent on maintenance history."
+        }
+      ],
+      "temperature_range": [0.2, 0.4],
+      "max_tokens": 200,
+      "context_importance": "high"
+    }
+  },
+  "context_enhancers": {
+    "seasonal_factors": [
+      "Consider current season and its impact on vehicle demand",
+      "Factor in seasonal maintenance requirements",
+      "Account for weather-related market fluctuations",
+      "Include seasonal pricing trends (spring/summer premium, winter discounts)"
+    ],
+    "market_conditions": [
+      "Include current economic indicators",
+      "Consider supply chain impacts",
+      "Factor in fuel price trends",
+      "Account for interest rate effects on financing",
+      "Consider new vehicle availability and pricing"
+    ],
+    "regional_specifics": [
+      "Account for local market preferences",
+      "Consider regional economic factors",
+      "Include local competition analysis",
+      "Factor in regional fuel costs and regulations",
+      "Consider local climate and terrain effects"
+    ],
+    "vehicle_specifics": [
+      "Include make/model reliability ratings",
+      "Consider common issues for the specific model",
+      "Factor in parts availability and costs",
+      "Account for brand reputation in the region"
+    ]
+  },
+  "prompt_optimization": {
+    "temperature_strategies": {
+      "precise_analysis": 0.0,
+      "balanced_insight": 0.3,
+      "creative_analysis": 0.6,
+      "exploratory": 0.8
+    },
+    "context_inclusion_rules": {
+      "always_include": ["market_conditions", "regional_specifics"],
+      "conditional_include": ["seasonal_factors", "vehicle_specifics"],
+      "exclude_if_simple": ["detailed_examples"]
+    },
+    "max_token_strategies": {
+      "concise": 100,
+      "standard": 200,
+      "detailed": 300,
+      "comprehensive": 500
+    }
+  },
+  "quality_metrics": {
+    "response_validation": [
+      "Check for factual accuracy",
+      "Verify response format compliance",
+      "Ensure context relevance",
+      "Validate example consistency"
+    ],
+    "improvement_tracking": {
+      "success_rate": "percentage of successful API calls",
+      "response_quality": "user satisfaction ratings",
+      "context_relevance": "context utilization effectiveness",
+      "prompt_efficiency": "tokens used vs. information provided"
+    }
+  }
+}
